@@ -1,0 +1,10 @@
+https://paste.ubuntu.com/p/kj3x9csQPs/
+
+n case you still experience boot problem, indicate this URL to:
+boot.repair@gmail.com or to your favorite support forum.
+
+You can now reboot your computer.
+Please do not forget to make your UEFI firmware boot on the Ubuntu 22.04.1 LTS entry (sdb1/efi/ubuntu/grubx64.efi file) !
+
+
+https://help.ubuntu.com/community/Boot-Repair
