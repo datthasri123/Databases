@@ -1,0 +1,18 @@
+db2 quiesce instance db2inst1 restricted access immediate force connections
+
+
+db2 deactivate db SAMPLE
+db2 backup db SAMPLE
+db2 activate db SAMPLE
+db2 unquiesce instance <inst_name>
+
+docker show logs <container_id>
+
+docker exec -it <container_id> bash
+
+su - db2inst1
+
+db2
+
+connect to SAMPLE
+

@@ -1,0 +1,28 @@
+services:
+    db2:
+        restart: always
+        container_name: "db2server"
+        image: ibmcom/db2
+        environment:
+            - LICENSE=accept
+            - DB2INSTANCE=db2inst1
+            - DB2INST1_PASSWORD=password
+            - DBNAME=SAMPLE
+            - BLU=false
+            - ENABLE_ORACLE_COMPATIBILITY=false
+            - UPDATEAVAIL=NO
+            - TO_CREATE_SAMPLEDB=true
+            - REPODB=false
+            - IS_OSXFS=false
+            - PERSISTENT_HOME=true
+            - HADR_ENABLED=false
+            - ETCD_ENDPOINT=
+            - ETCD_USERNAME=
+            - ETCD_PASSWORD=
+        privileged: true
+        volumes:
+          - C:\Users\Siva\Documents\Learning\Databases\DB2\docker_db2_data_storage:/database
+        command: bash -c  "su - db2inst1"
+        ports:
+            # DB2 PORT
+            - '50000:50000'
