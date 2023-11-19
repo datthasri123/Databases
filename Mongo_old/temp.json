@@ -1,0 +1,33 @@
+[
+    {
+        "_id": "admin.root",
+        "userId": {
+            "$binary": {
+                "base64": "JS3W21lJSeSY9xG++X+0Sw==",
+                "subType": "04"
+            }
+        },
+        "user": "root",
+        "db": "admin",
+        "credentials": {
+            "SCRAM-SHA-1": {
+                "iterationCount": 10000,
+                "salt": "67UqlxtYWW6YhoGnsbRg5g==",
+                "storedKey": "oZS78VGtnK90izm0/Ep43FM6hOo=",
+                "serverKey": "dP3o92mzc1bDfkndF08Jmpi7npA="
+            },
+            "SCRAM-SHA-256": {
+                "iterationCount": 15000,
+                "salt": "RblZEjr0W2r6vAMN04x/IYJijKRJ1a/BJ+H8WQ==",
+                "storedKey": "HZz5Pk7+cGn9wfQVMJjnmuyUBrh5x2cGfxmaTexyY0I=",
+                "serverKey": "T5M86vzuhs0AaqD3vemOgQ32ApjO90uEW9wZiSfojdA="
+            }
+        },
+        "roles": [
+            {
+                "role": "root",
+                "db": "admin"
+            }
+        ]
+    }
+]
