@@ -1,1 +1,744 @@
-mongodb+srv://<username>:<password>@beyondthebasics.abcde.mongodb.net/test
+
+mongodb+srv://root:127.0.0.1:27017/
+
+
+
+CONNECTING TO MONGOSHELL
+mongosh mongodb://root:example@127.0.0.1:27017/ --password=example
+
+
+GETTING IP ADDRESS OF CONTAINER
+ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container-id>
+
+
+--IMPORTING FROM JSON FILE
+
+mongoimport --host=127.0.0.1 --port=27017 --username=root --password=example --db=sj --collection=books --authenticationDatabase=admin --file=/home/siva/Downloads/mongodb-json-files-master/datasets/books.json
+
+mongoimport --host=127.0.0.1 --port=27017 --username=root --password=example --db=test --collection=swiggy --authenticationDatabase=admin --file=/home/siva/Downloads/async-demo-main/data.json
+
+mongoimport --host=127.0.0.1 --port=27017 --username=root --password=example --db=test --authenticationDatabase=admin --file=/home/siva/Downloads/archive/archiveMongo
+
+
+-- RESTORING BSON FILE:
+
+mongorestore --host=127.0.0.1 --port=27017 --username=root --password=example --db=sj --collection=books --authenticationDatabase=admin /home/siva/Downloads/mongodb-json-files-master/datasets/people.bson
+
+-- SAMPLE DATASETS DOWNLOADED FROM HERE
+
+https://github.com/neelabalan/mongodb-sample-dataset
+
+
+mongoimport --host=127.0.0.1 --port=27017 --username=root --password=example --db=sj --collection=imdb --authenticationDatabase=admin --file=/home/siva/Downloads/archive/movies_merged.json
+
+
+db.sj.findOne({pageCount:{"$gt":500}})
+db.sj.countDocuments({pageCount:{"$gt":500}})
+db.sj.find({pageCount:{"$gt":500}},{_id:0, title:1, pageCount:1}).sort({pageCount:-1})
+db.sj.find({pageCount:{"$gt":500,"$lt":800}},{_id:0, title:1, pageCount:1}).sort({pageCount:-1})
+
+-- finding something in a array
+
+db.sj.findOne({authors:"Robi Sen"})
+db.sj.findOne({authors:{"$size":2}})
+
+db.scores.insertMany([{ _id: 1, results: [ 81, 85, 88 ] }, { _id: 2, results: [ 71, 88, 89 ] }])
+
+
+test> db.scores.find()
+[
+  { _id: 1, results: [ 81, 85, 88 ] },
+  { _id: 2, results: [ 71, 88, 89 ] }
+]
+
+test> db.scores.find({results:{"$gt":80,"$lt":85}})
+[
+  { _id: 1, results: [ 81, 85, 88 ] },
+  { _id: 2, results: [ 71, 88, 89 ] }
+]
+
+test> db.scores.find({results:{"$elemMatch":{"$gt":80,"$lt":85}}})
+[ { _id: 1, results: [ 81, 85, 88 ] } ]
+
+
+
+-- $expr
+
+db.supplies.insertMany([
+   { "_id" : 1, "item" : "binder", "qty" : NumberInt("100"), "price" : NumberDecimal("12") },
+   { "_id" : 2, "item" : "notebook", "qty" : NumberInt("200"), "price" : NumberDecimal("8") },
+   { "_id" : 3, "item" : "pencil", "qty" : NumberInt("50"), "price" : NumberDecimal("6") },
+   { "_id" : 4, "item" : "eraser", "qty" : NumberInt("150"), "price" : NumberDecimal("3") },
+   { "_id" : 5, "item" : "legal pad", "qty" : NumberInt("42"), "price" : NumberDecimal("10") }
+])
+
+db.monthlyBudget.insertMany([
+ { "_id" : 1, "category" : "food", "budget": 400, "spent": 450 }
+,{ "_id" : 2, "category" : "drinks", "budget": 100, "spent": 150 }
+,{ "_id" : 3, "category" : "clothes", "budget": 100, "spent": 50 }
+,{ "_id" : 4, "category" : "misc", "budget": 500, "spent": 300 }
+,{ "_id" : 5, "category" : "travel", "budget": 200, "spent": 650 }
+])
+
+test> db.monthlyBudget.find( { $expr: { $gt: [ "$spent" , "$budget" ] } } )
+[
+  { _id: 1, category: 'food', budget: 400, spent: 450 },
+  { _id: 2, category: 'drinks', budget: 100, spent: 150 },
+  { _id: 5, category: 'travel', budget: 200, spent: 650 }
+]
+
+
+// Aggregation expression to calculate discounted price
+
+let discountedPrice = {
+   $cond: {
+      if: { $gte: ["$qty", 100] },
+      then: { $multiply: ["$price", NumberDecimal("0.50")] },
+      else: { $multiply: ["$price", NumberDecimal("0.75")] }
+   }
+};
+
+// Query the supplies collection using the aggregation expression
+
+db.supplies.find( { $expr: { $lt:[ discountedPrice,  NumberDecimal("5") ] } });
+
+
+-- $set
+
+
+test> db.products.insertOne(
+...    {
+...      _id: 100,
+...      quantity: 250,
+...      instock: true,
+...      reorder: false,
+...      details: { model: "14QQ", make: "Clothes Corp" },
+...      tags: [ "apparel", "clothing" ],
+...      ratings: [ { by: "Customer007", rating: 4 } ]
+...    }
+... )
+{ acknowledged: true, insertedId: 100 }
+test> db.products.updateOne(
+...    { _id: 100 },
+...    { $set:
+...       {
+...         quantity: 500,
+...         details: { model: "2600", make: "Fashionaires" },
+...         tags: [ "coats", "outerwear", "clothing" ]
+...       }
+...    }
+... )
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+
+test> db.products.findOne({_id:100})
+{
+  _id: 100,
+  quantity: 500,
+  instock: true,
+  reorder: false,
+  details: { model: '2600', make: 'Fashionaires' },
+  tags: [ 'coats', 'outerwear', 'clothing' ],
+  ratings: [ { by: 'Customer007', rating: 4 } ]
+}
+
+
+
+
+
+db.products.updateOne({_id:100},{$set:{"details.make":"InnovMakers"}})
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+test> db.products.findOne({_id:100})
+{
+  _id: 100,
+  quantity: 500,
+  instock: true,
+  reorder: false,
+  details: { model: '2600', make: 'InnovMakers' },
+  tags: [ 'coats', 'outerwear', 'clothing' ],
+  ratings: [ { by: 'Customer007', rating: 4 } ]
+}
+
+
+
+-- update the member in an array
+
+db.products.updateOne({_id:100},{$set:{"tags.1":"suits"}})
+
+
+test> db.products.updateOne({_id:100},{$set:{"tags.1":"suits"}})
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+test> db.products.findOne({_id:100})
+{
+  _id: 100,
+  quantity: 500,
+  instock: true,
+  reorder: false,
+  details: { model: '2600', make: 'InnovMakers' },
+  tags: [ 'coats', 'suits', 'clothing' ],
+  ratings: [ { by: 'Customer007', rating: 4 } ]
+}
+
+
+$setOnInsert
+
+    If an update operation with upsert: true results in an insert of a document, 
+    then $setOnInsert assigns the specified values to the fields in the document. 
+    If the update operation does not result in an insert, $setOnInsert does nothing.
+
+
+db.products.updateOne(
+  { _id: 1 },
+  {
+     $set: { item: "apple" },
+     $setOnInsert: { defaultQty: 100 }
+  },
+  { upsert: true }
+)
+
+-- unset
+
+$unset
+
+    The $unset operator deletes a particular field
+
+
+db.products.insertMany( [
+   { "item": "chisel", "sku": "C001", "quantity": 4, "instock": true },
+   { "item": "hammer", "sku": "unknown", "quantity": 3, "instock": true },
+   { "item": "nails", "sku": "unknown", "quantity": 100, "instock": true }
+] )
+
+
+db.products.updateOne(
+   { sku: "unknown" },
+   { $unset: { quantity: "", instock: "" } }
+)
+
+
+$
+
+    The positional $ operator identifies an element in an array to update without explicitly specifying the position of the element in the array.
+
+    { "<array>.$" : value }
+
+
+db.students.insertMany( [
+   { "_id" : 1, "grades" : [ 85, 80, 80 ] },
+   { "_id" : 2, "grades" : [ 88, 90, 92 ] },
+   { "_id" : 3, "grades" : [ 85, 100, 90 ] }
+] )
+
+# updating the values in a array
+db.students.updateOne(
+   { _id: 1, grades: 80 },
+   { $set: { "grades.$" : 82 } }
+)
+
+#Note - The positional $ operator acts as a placeholder for the first match of the update query document.
+
+After the operation, the students collection contains the following documents:
+
+{ "_id" : 1, "grades" : [ 85, 82, 80 ] }
+{ "_id" : 2, "grades" : [ 88, 90, 92 ] }
+{ "_id" : 3, "grades" : [ 85, 100, 90 ] }
+
+
+db.students.insertOne({
+  _id: 4,
+  grades: [
+     { grade: 80, mean: 75, std: 8 },
+     { grade: 85, mean: 90, std: 5 },
+     { grade: 85, mean: 85, std: 8 }
+  ]
+})
+
+# udpate inside array of objects
+
+db.students.updateOne({_id:4,"grades.grade":80},{$set:{"grades.$.mean":95}})
+
+
+db.students.insertOne({
+  _id: 5,
+  grades: [
+     { grade: 80, mean: 75, std: 8 },
+     { grade: 85, mean: 90, std: 5 },
+     { grade: 90, mean: 85, std: 3 }
+  ]
+})
+
+
+
+db.students.updateOne(
+   {
+     _id: 5,
+     grades: { $elemMatch: { grade: { $lte: 90 }, mean: { $gt: 80 } } }
+   },
+   { $set: { "grades.$.std" : 6 } }
+)
+
+output:
+
+{
+  _id: 5,
+  grades: [
+    { grade: 80, mean: 75, std: 8 },
+    { grade: 85, mean: 90, std: 6 },
+    { grade: 90, mean: 85, std: 3 }
+  ]
+}
+
+
+# update with multiple array matches
+
+
+db.students_deans_list.insertMany( [
+   {
+      _id: 8,
+      activity_ids: [ 1, 2 ],
+      grades: [ 90, 95 ],
+      deans_list: [ 2021, 2020 ]
+   }
+] )
+
+
+
+$[]
+
+    The all positional operator $[] indicates that the update operator should modify all elements in the specified array field.
+
+    The $[] operator has the following form:
+
+    { <update operator>: { "<array>.$[]" : value } }
+
+
+
+    If an upsert operation results in an insert, the query must include an exact equality match on the array field in order to use the $[] positional operator in the update statement.
+
+    For example, the following upsert operation, which uses $[] in the update document, specifies an exact equality match condition on the array field:
+
+db.collection.updateOne(
+   { myArray: [ 5, 8 ] },
+   { $set: { "myArray.$[]": 10 } },
+   { upsert: true }
+)
+
+If no such document exists, the operation would result in an insertion of the following document:
+
+{ "_id" : ObjectId(...), "myArray" : [ 10, 10 ] }
+
+
+Nested Arrays
+
+db.students.insertMany( [
+   { "_id" : 1, "grades" : [ 85, 82, 80 ] },
+   { "_id" : 2, "grades" : [ 88, 90, 92 ] },
+   { "_id" : 3, "grades" : [ 85, 100, 90 ] }
+] )
+
+
+To increment all elements in the grades array by 10 for all documents in the collection, use the all positional $[] operator:
+
+db.students.updateMany(
+   { },
+   { $inc: { "grades.$[]": 10 } },
+)
+
+
+
+# UPDATE ALL THE DOCUMENTS IN A ARRAY
+
+
+db.students2.insertMany( [
+   {
+      "_id" : 1,
+      "grades" : [
+         { "grade" : 80, "mean" : 75, "std" : 8 },
+         { "grade" : 85, "mean" : 90, "std" : 6 },
+         { "grade" : 85, "mean" : 85, "std" : 8 }
+      ]
+   },
+   {
+      "_id" : 2,
+      "grades" : [
+         { "grade" : 90, "mean" : 75, "std" : 8 },
+         { "grade" : 87, "mean" : 90, "std" : 5 },
+         { "grade" : 85, "mean" : 85, "std" : 6 }
+      ]
+   }
+] )
+
+db.students2.updateMany(
+   { },
+   { $inc: { "grades.$[].std" : -2 } },
+)
+
+
+
+# Update Arrays Specified Using a Negation Query Operator
+
+db.results.insertMany( [
+   { "_id" : 1, "grades" : [ 85, 82, 80 ] },
+   { "_id" : 2, "grades" : [ 88, 90, 92 ] },
+   { "_id" : 3, "grades" : [ 85, 100, 90 ] }
+] )
+
+db.results.updateMany(
+   { "grades" : { $ne: 100 } },
+   { $inc: { "grades.$[]": 10 } },
+)
+
+
+
+# Update Nested Arrays in Conjunction with $[<identifier>]
+
+db.students3.insertMany( [
+   { "_id" : 1,
+      "grades" : [
+        { type: "quiz", questions: [ 10, 8, 5 ] },
+        { type: "quiz", questions: [ 8, 9, 6 ] },
+        { type: "hw", questions: [ 5, 4, 3 ] },
+        { type: "exam", questions: [ 25, 10, 23, 0 ] },
+      ]
+   }
+] )
+
+
+
+db.students3.updateMany(
+   {},
+   { $inc: { "grades.$[].questions.$[score]": 2 } },
+   { arrayFilters: [  { "score": { $gte: 8 } } ] }
+)
+
+
+# -------
+
+$[<identifier>]
+
+    The filtered positional operator $[<identifier>] identifies the array elements that match the arrayFilters conditions for an update operation, 
+    e.g. db.collection.updateMany() and db.collection.findAndModify().
+
+    Used in conjunction with the arrayFilters option, the $[<identifier>] operator has the following form:
+
+    { <update operator>: { "<array>.$[<identifier>]" : value } },
+    { arrayFilters: [ { <identifier>: <condition> } ] }
+
+Use in conjunction with the arrayFilters option to update all elements that match the arrayFilters conditions in the document or documents that match the query conditions. For example:
+
+db.collection.updateMany(
+   { <query conditions> },
+   { <update operator>: { "<array>.$[<identifier>]" : value } },
+   { arrayFilters: [ { <identifier>: <condition> } ] }
+)
+
+
+
+INDEXES:
+
+RUNNING EXPLAIN ON THE collection
+
+   db.swiggy.aggregate([{$group:{"_id":"$region", count:{$sum:1}}},{$sort:{count: -1}}]).explain()
+{
+  explainVersion: '2',
+  stages: [
+    {
+      '$cursor': {
+        queryPlanner: {
+          namespace: 'test.swiggy',
+          indexFilterSet: false,
+          parsedQuery: {},
+          queryHash: '8ADC3B11',
+          planCacheKey: '8ADC3B11',
+          maxIndexedOrSolutionsReached: false,
+          maxIndexedAndSolutionsReached: false,
+          maxScansToExplodeReached: false,
+          winningPlan: {
+            queryPlan: {
+              stage: 'GROUP',
+              planNodeId: 2,
+              inputStage: {
+                stage: 'COLLSCAN',
+                planNodeId: 1,
+                filter: {},
+                direction: 'forward'
+              }
+            },
+            slotBasedPlan: {
+              slots: '$$RESULT=s11 env: { s3 = 1696217490497 (NOW), s1 = TimeZoneDatabase(America/St_Vincent...Europe/Minsk) (timeZoneDB), s2 = Nothing (SEARCH_META) }',
+              stages: '[2] mkobj s11 [_id = s7, count = s10] true false \n' +
+                '[2] project [s10 = doubleDoubleSumFinalize (s8)] \n' +
+                '[2] group [s7] [s8 = aggDoubleDoubleSum (1)] spillSlots[s9] mergingExprs[aggMergeDoubleDoubleSums (s9)] \n' +
+                '[2] project [s7 = fillEmpty (s6, null)] \n' +
+                '[2] project [s6 = getField (s4, "region")] \n' +
+                '[1] scan s4 s5 none none none none [] @"0854235c-4d3f-4899-ac7e-6bc2ac3c4f11" true false '
+            }
+          },
+          rejectedPlans: []
+        }
+      }
+    },
+    { '$sort': { sortKey: { count: -1 } } }
+  ],
+  serverInfo: {
+    host: '47a321a7aa42',
+    port: 27017,
+    version: '6.0.5',
+    gitVersion: 'c9a99c120371d4d4c52cbb15dac34a36ce8d3b1d'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600
+  },
+  command: {
+    aggregate: 'swiggy',
+    pipeline: [
+      { '$group': { _id: '$region', count: { '$sum': 1 } } },
+      { '$sort': { count: -1 } }
+    ],
+    cursor: {},
+    '$db': 'test'
+  },
+  ok: 1
+}
+
+QUERY:
+
+   test> db.swiggy.find({region: /R/}).explain()
+{
+  explainVersion: '1',
+  queryPlanner: {
+    namespace: 'test.swiggy',
+    indexFilterSet: false,
+    parsedQuery: { region: { '$regex': 'R' } },
+    queryHash: '7EB905A6',
+    planCacheKey: '7EB905A6',
+    maxIndexedOrSolutionsReached: false,
+    maxIndexedAndSolutionsReached: false,
+    maxScansToExplodeReached: false,
+    winningPlan: {
+      stage: 'COLLSCAN',
+      filter: { region: { '$regex': 'R' } },
+      direction: 'forward'
+    },
+    rejectedPlans: []
+  },
+  command: { find: 'swiggy', filter: { region: /R/ }, '$db': 'test' },
+  serverInfo: {
+    host: '47a321a7aa42',
+    port: 27017,
+    version: '6.0.5',
+    gitVersion: 'c9a99c120371d4d4c52cbb15dac34a36ce8d3b1d'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600
+  },
+  ok: 1
+}
+
+=============================================================================
+
+test> db.swiggy.aggregate([{$group:{"_id":"$region", count:{$sum:1}}},{$sort:{count: -1}}]).explain("executionStats")
+{
+  explainVersion: '2',
+  stages: [
+    {
+      '$cursor': {
+        queryPlanner: {
+          namespace: 'test.swiggy',
+          indexFilterSet: false,
+          parsedQuery: {},
+          queryHash: '8ADC3B11',
+          planCacheKey: '8ADC3B11',
+          maxIndexedOrSolutionsReached: false,
+          maxIndexedAndSolutionsReached: false,
+          maxScansToExplodeReached: false,
+          winningPlan: {
+            queryPlan: {
+              stage: 'GROUP',
+              planNodeId: 2,
+              inputStage: {
+                stage: 'COLLSCAN',
+                planNodeId: 1,
+                filter: {},
+                direction: 'forward'
+              }
+            },
+            slotBasedPlan: {
+              slots: '$$RESULT=s11 env: { s1 = TimeZoneDatabase(America/St_Vincent...Europe/Minsk) (timeZoneDB), s2 = Nothing (SEARCH_META), s3 = 1696223744865 (NOW) }',
+              stages: '[2] mkobj s11 [_id = s7, count = s10] true false \n' +
+                '[2] project [s10 = doubleDoubleSumFinalize (s8)] \n' +
+                '[2] group [s7] [s8 = aggDoubleDoubleSum (1)] spillSlots[s9] mergingExprs[aggMergeDoubleDoubleSums (s9)] \n' +
+                '[2] project [s7 = fillEmpty (s6, null)] \n' +
+                '[2] project [s6 = getField (s4, "region")] \n' +
+                '[1] scan s4 s5 none none none none [] @"0854235c-4d3f-4899-ac7e-6bc2ac3c4f11" true false '
+            }
+          },
+          rejectedPlans: []
+        },
+        executionStats: {
+          executionSuccess: true,
+          nReturned: 531,
+          executionTimeMillis: 26,
+          totalKeysExamined: 0,
+          totalDocsExamined: 53013,
+          executionStages: {
+            stage: 'mkobj',
+            planNodeId: 2,
+            nReturned: 531,
+            executionTimeMillisEstimate: 25,
+            opens: 1,
+            closes: 1,
+            saveState: 54,
+            restoreState: 54,
+            isEOF: 1,
+            objSlot: 11,
+            fields: [],
+            projectFields: [ '_id', 'count' ],
+            projectSlots: [ Long("7"), Long("10") ],
+            forceNewObject: true,
+            returnOldObject: false,
+            inputStage: {
+              stage: 'project',
+              planNodeId: 2,
+              nReturned: 531,
+              executionTimeMillisEstimate: 25,
+              opens: 1,
+              closes: 1,
+              saveState: 54,
+              restoreState: 54,
+              isEOF: 1,
+              projections: { '10': 'doubleDoubleSumFinalize (s8) ' },
+              inputStage: {
+                stage: 'group',
+                planNodeId: 2,
+                nReturned: 531,
+                executionTimeMillisEstimate: 25,
+                opens: 1,
+                closes: 1,
+                saveState: 54,
+                restoreState: 54,
+                isEOF: 1,
+                groupBySlots: [ Long("7") ],
+                expressions: { '8': 'aggDoubleDoubleSum (1) ' },
+                mergingExprs: { '9': 'aggMergeDoubleDoubleSums (s9) ' },
+                usedDisk: false,
+                numSpills: 0,
+                spilledRecords: 0,
+                spilledDataStorageSize: 0,
+                inputStage: {
+                  stage: 'project',
+                  planNodeId: 2,
+                  nReturned: 53013,
+                  executionTimeMillisEstimate: 24,
+                  opens: 1,
+                  closes: 1,
+                  saveState: 54,
+                  restoreState: 54,
+                  isEOF: 1,
+                  projections: { '7': 'fillEmpty (s6, null) ' },
+                  inputStage: {
+                    stage: 'project',
+                    planNodeId: 2,
+                    nReturned: 53013,
+                    executionTimeMillisEstimate: 24,
+                    opens: 1,
+                    closes: 1,
+                    saveState: 54,
+                    restoreState: 54,
+                    isEOF: 1,
+                    projections: { '6': 'getField (s4, "region") ' },
+                    inputStage: {
+                      stage: 'scan',
+                      planNodeId: 1,
+                      nReturned: 53013,
+                      executionTimeMillisEstimate: 23,
+                      opens: 1,
+                      closes: 1,
+                      saveState: 54,
+                      restoreState: 54,
+                      isEOF: 1,
+                      numReads: 53013,
+                      recordSlot: 4,
+                      recordIdSlot: 5,
+                      fields: [],
+                      outputSlots: []
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      nReturned: Long("531"),
+      executionTimeMillisEstimate: Long("25")
+    },
+    {
+      '$sort': { sortKey: { count: -1 } },
+      totalDataSizeSortedBytesEstimate: Long("131009"),
+      usedDisk: false,
+      spills: Long("0"),
+      nReturned: Long("531"),
+      executionTimeMillisEstimate: Long("25")
+    }
+  ],
+  serverInfo: {
+    host: '47a321a7aa42',
+    port: 27017,
+    version: '6.0.5',
+    gitVersion: 'c9a99c120371d4d4c52cbb15dac34a36ce8d3b1d'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600
+  },
+  command: {
+    aggregate: 'swiggy',
+    pipeline: [
+      { '$group': { _id: '$region', count: { '$sum': 1 } } },
+      { '$sort': { count: -1 } }
+    ],
+    cursor: {},
+    '$db': 'test'
+  },
+  ok: 1
+}
+
+================================================================
