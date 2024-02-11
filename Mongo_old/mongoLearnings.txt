@@ -449,6 +449,28 @@ db.collection.updateMany(
 
 INDEXES:
 
+
+db.banks_n_balance.getIndexes()
+
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { BankAccount: 1 }, name: 'field_name_index' },
+  { v: 2, key: { BankAccount: 1 }, name: 'Index1', unique: true }
+]
+
+random_number> db.banks_n_balance.dropIndex('field_name_index')
+{ nIndexesWas: 3, ok: 1 }
+random_number> db.banks_n_balance.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { BankAccount: 1 }, name: 'Index1', unique: true }
+]
+random_number> db.banks_n_balance.dropIndex('_id_')
+MongoServerError[InvalidOptions]: cannot drop _id index
+
+
+
+
 RUNNING EXPLAIN ON THE collection
 
    db.swiggy.aggregate([{$group:{"_id":"$region", count:{$sum:1}}},{$sort:{count: -1}}]).explain()
@@ -738,3 +760,30 @@ test> db.swiggy.aggregate([{$group:{"_id":"$region", count:{$sum:1}}},{$sort:{co
 }
 
 ================================================================
+
+
+# drop database
+
+use random_number
+
+random_number> db.dropDatabase()
+{ ok: 1, dropped: 'random_number' }
+
+
+=================================================================
+
+# drop collection
+
+db.banks_n_balance.drop()
+
+
+=================================================================
+
+
+
+type -a python3
+python3 is /usr/bin/python3
+python3 is /bin/python3
+
+
+

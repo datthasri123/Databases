@@ -1,0 +1,38 @@
+    gcloud compute instances create my-test-vm --source-instance-template=my-instance-template-with-custom-image
+    gcloud compute instance-groups managed list
+    gcloud compute instance-groups managed delete my-managed-instance-group
+    gcloud compute instance-groups managed create my-mig --zone us-central1-a --template my-instance-template-with-custom-image --size 1
+    gcloud compute instance-groups managed set-autoscaling my-mig --max-num-replicas=2 --zone us-central1-a
+    gcloud compute instance-groups managed stop-autoscaling my-mig --zone us-central1-a
+    gcloud compute instance-groups managed resize my-mig --size=1 --zone=us-central1-a
+    gcloud compute instance-groups managed recreate-instances my-mig --instances=my-mig-85fb --zone us-central1-a
+    gcloud compute instance-groups managed delete my-managed-instance-group --region=us-central1
+
+
+    cd default-service
+    gcloud app deploy
+    gcloud app services list
+    gcloud app versions list
+    gcloud app instances list
+    gcloud app deploy --version=v2
+    gcloud app versions list
+    gcloud app browse
+    gcloud app browse --version 20210215t072907
+    gcloud app deploy --version=v3 --no-promote
+    gcloud app browse --version v3
+    gcloud app services set-traffic split=v3=.5,v2=.5
+    gcloud app services set-traffic splits=v3=.5,v2=.5
+    watch curl https://melodic-furnace-304906.uc.r.appspot.com/
+    gcloud app services set-traffic --splits=v3=.5,v2=.5 --split-by=random
+     
+    cd ../my-first-service/
+    gcloud app deploy
+    gcloud app browse --service=my-first-service
+     
+    gcloud app services list
+    gcloud app regions list
+     
+    gcloud app browse --service=my-first-service --version=20210215t075851
+    gcloud app browse --version=v2
+    gcloud app open-console --version=v2
+    gcloud app versions list --hide-no-traffic
