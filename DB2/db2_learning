@@ -16,3 +16,17 @@ db2
 
 connect to SAMPLE
 
+spring db2 parameters
+
+spring.datasource.url=jdbc:db2://localhost:50000/SAMPLE
+spring.datasource.username=db2inst1
+spring.datasource.password=password
+
+
+jars to be used
+
+		<dependency>
+			<groupId>com.ibm.db2</groupId>
+			<artifactId>jcc</artifactId>
+			<version>11.5.0.0</version>
+		</dependency>

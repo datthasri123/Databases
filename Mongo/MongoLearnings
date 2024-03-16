@@ -1,6 +1,13 @@
 
-mongodb+srv://root:127.0.0.1:27017/
+mongosh mongodb://root:root@127.0.0.1:27017/
 
+java Mongo connection string:
+
+    Not working:
+        mongodb+srv://root:root@127.0.0.1:27017/?authSource=admin&replicaSet=myRepl
+    
+    working:
+        -Dmongodb.uri="mongodb://root:root@127.0.0.1/testdb?authSource=admin"
 
 
 CONNECTING TO MONGOSHELL
