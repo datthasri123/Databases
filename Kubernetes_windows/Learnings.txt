@@ -1,0 +1,239 @@
+Verify the current network agent and Pod network configuration ?
+
+NetworkPolicy only works if you're using a supported network agent. 
+The default configuration doesn't use any NetworkPolicy. 
+Run the following command to verify that you don't see any NetworkPolicy pods.
+
+kubectl get all -n kube-system
+
+
+==> Replace the network agent with the calico agent
+You will need to install a network agent to work with NetworkPolicy, let's install the calico agent. To access it, clone the course Git repository
+
+> git clone https://github.com/sandervanvugt/cka
+> cd cka
+> kubectl apply -f calico.yaml
+
+
+
+To verify that the new network agent has been deployed successfully, run the following command. Repeat until all pods show as running:
+
+> kubectl get pods -n kube-system
+
+NAME                                      READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-b48d575fb-dn7h8   1/1     Running   0          43s
+calico-node-8z7dw                         1/1     Running   0          43s
+calico-node-p79gv                         1/1     Running   0          43s
+coredns-787d4945fb-6qdw8                  1/1     Running   0          5m34s
+coredns-787d4945fb-zvk2g                  1/1     Running   0          5m34s
+etcd-controlplane                         1/1     Running   0          5m48s
+kube-apiserver-controlplane               1/1     Running   0          5m48s
+kube-controller-manager-controlplane      1/1     Running   0          5m50s
+kube-proxy-flrqq                          1/1     Running   0          5m21s
+kube-proxy-xcpdz                          1/1     Running   0          5m35s
+kube-scheduler-controlplane               1/1     Running   0          5m48s
+kubelet-csr-approver-68c8fcd559-96gk7     1/1     Running   0          5m20s
+kubelet-csr-approver-68c8fcd559-vdt8g     1/1     Running   0          5m20s
+
+
+==========================================================================================
+
+To apply a label on node use the below command
+> kubectl label node node01 color=blue
+
+
+Create a new deployment named blue with the nginx image and 3 replicas
+Name: blue
+Replicas: 3
+Image: nginx
+
+> kubectl create deployment blue --image=nginx --replicas=3
+
+
+Which nodes can the pods for the blue deployment be placed on?
+> kubectl get nodes
+> kubectl describe node node_name | grep -i Taints
+> kubectl describe node controlplane | grep -i Taints
+> kubectl describe node node01 | grep -i Taints
+
+
+Set Node Affinity to the deployment to place the pods on node01 only.
+  Name: blue
+  Replicas: 3
+  Image: nginx
+  NodeAffinity: requiredDuringSchedulingIgnoredDuringExecution
+  Key: color
+  value: blue
+
+ 
+> kubectl edit deployments.apps
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: color
+                  operator: In
+                  values:
+                    - blue
+
+
+> kubectl get pods -o wide // this will show you which pod is deployed on which node
+
+
+
+Create a new deployment named red with the nginx image and 2 replicas, 
+and ensure it gets placed on the controlplane node only.
+
+Use the label key - 
+node-role.kubernetes.io/control-plane - which is already set on the controlplane node.
+
+use > kubectl describe node node_name // to see all the labels that were created on that node
+
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=controlplane
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: red
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: Always
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+
+
+
+
+Create a multi-container pod with 2 containers.
+
+>>> Use the spec given below:
+Name: yellow
+
+Container 1 Name: lemon
+Container 1 Image: busybox
+Container 2 Name: gold
+Container 2 Image: redis
+
+If the pod goes into the crashloopbackoff 
+then add the command sleep 1000 in the lemon container.
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+   name: yellow
+spec:
+  containers:
+    - name: lemon
+      image: busybox
+      command:
+       - sleep
+       - "1000"
+    - name: gold
+      image: redis
+
+// get the pods running in the namespace: elastic-stack
+> kubectl get pods -n elastic-stack
+
+// to verify the logs of the namespace
+> kubectl -n elastic-stack logs kibana
+
+
+The application outputs logs to the file /log/app.log. 
+View the logs and try to identify the user having issues with Login.
+
+Inspect the log file inside the pod. to do this execute the below command
+
+> kubectl -n elastic-stack exec -it app -- cat /log/app.log
+
+------------------------------------------------
+
+Edit the pod in the elastic-stack namespace to add a sidecar container 
+to send logs to Elastic Search. 
+Mount the log volume to the sidecar container.
+Only add a new container. Do not modify anything else. Use the spec provided below.
+
+Note: State persistence concepts are discussed in detail later in this course. 
+For now please make use of the below documentation link for updating the concerning pod.
+
+https://kubernetes.io/docs/tasks/access-application-cluster/communicate-containers-same-pod-shared-volume/
+
+
+ to capture any pod definition in to yaml file utilize the command 
+ > kubectl get po pod-name -o yaml > tmp.txt
+
+ 
+The solution manifest file as follows:
+Name: app
+Container Name: sidecar
+Container Image: kodekloud/filebeat-configured
+Volume Mount: log-volume
+Mount Path: /var/log/event-simulator/
+Existing Container Name: app
+Existing Container Image: kodekloud/event-simulator
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+  namespace: elastic-stack
+  labels:
+    name: app
+spec:
+  volumes:
+  - name: log-volume
+    hostPath:
+      # directory location on host
+      path: /var/log/webapp
+      # this field is optional
+      type: DirectoryOrCreate
+
+  containers:
+  - name: app
+    image: kodekloud/event-simulator
+    volumeMounts:
+    - mountPath: /log
+      name: log-volume
+
+  - name: sidecar
+    image: kodekloud/filebeat-configured
+    volumeMounts:
+    - mountPath: /var/log/event-simulator/
+      name: log-volume
+
+
+
+
