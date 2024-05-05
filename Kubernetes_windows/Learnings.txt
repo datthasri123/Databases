@@ -235,5 +235,290 @@ spec:
       name: log-volume
 
 
+===========================================================
 
 
+In a multi-container pod, each container is expected to run a process that stays alive as long as 
+the POD’s lifecycle. For example in the multi-container pod that we talked about earlier that has 
+a web application and logging agent, both the containers are expected to stay alive at all times. 
+The process running in the log agent container is expected to stay alive as long as the web 
+application is running. If any of them fail, the POD restarts.
+
+But at times you may want to run a process that runs to completion in a container. 
+For example, a process that pulls a code or binary from a repository that will be 
+used by the main web application. That is a task that will be run only one time
+ when the pod is first created. Or a process that waits for an external service 
+ or database to be up before the actual application starts. 
+ That’s where initContainers comes in.
+
+An initContainer is configured in a pod-like all other containers, except that it is specified 
+inside a initContainers section, like this:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: \['sh', '-c', 'echo The app is running! && sleep 3600'\]
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: \['sh', '-c', 'git clone &nbsp;;'\]
+
+
+
+
+
+When a POD is first created the initContainer is run, and the process in the initContainer
+must run to a completion before the real container hosting the application starts.
+
+You can configure multiple such initContainers as well, like how we did for multi-pod containers. 
+In that case, each init container is run one at a time in sequential order.
+
+If any of the initContainers fail to complete, Kubernetes restarts the Pod repeatedly until the 
+Init Container succeeds.
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: \['sh', '-c', 'echo The app is running! && sleep 3600'\]
+  initContainers:
+  - name: init-myservice
+    image: busybox:1.28
+    command: \['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;'\]
+  - name: init-mydb
+    image: busybox:1.28
+    command: \['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;'\]
+
+
+
+>>> add the initContainer like below
+
+  initContainers:
+  - image: busybox
+    name: red-initContainers
+    command:
+    - "sleep"
+    - "20"
+
+
+
+
+Update the pod red to use an initContainer 
+that uses the busybox image and sleeps for 20 seconds
+
+Delete and re-create the pod if necessary. But make sure no other configurations change.
+
+Pod: red
+initContainer Configured Correctly
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: red
+  namespace: default
+spec:
+  containers:
+  - command:
+    - sh
+    - -c
+    - echo The app is running! && sleep 3600
+    image: busybox:1.28
+    name: red-container
+  initContainers:
+  - image: busybox
+    name: red-initcontainer
+    command: 
+      - "sleep"
+      - "20"
+
+
+=====================================================================
+
+// for making HTTP check
+
+readinessProbe:
+  httpGet:
+    path: /api/ready
+    port: 8080
+  initialDelaySeconds: 10
+
+  periodSeconds: 5
+
+  failureThresold: 8
+
+
+
+// for database
+
+readinessProbe:
+  tcpSocket:
+    port: 8080
+
+
+// to execute any scripts
+
+readinessProbe:
+  exec:
+    command: 
+    - cat
+    - /app/is_ready
+
+==================================================================
+
+// similar to this we have liveliness probe as well
+
+livenessProbe:
+  httpGet:
+    path: /api/ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThresold: 8
+
+
+
+// for database
+
+livenessProbe:
+  tcpSocket:
+    port: 8080
+
+
+// to execute any scripts
+
+livenessProbe:
+  exec:
+    command: 
+    - cat
+    - /app/is_ready
+
+
+
+controlplane ~ ➜  kubectl get pods
+NAME              READY   STATUS    RESTARTS   AGE
+simple-webapp-1   1/1     Running   0          9m16s
+
+controlplane ~ ➜  kubectl get service
+NAME             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+kubernetes       ClusterIP   10.96.0.1      <none>        443/TCP          16m
+webapp-service   NodePort    10.100.77.95   <none>        8080:30080/TCP   9m23s
+
+
+script to make http requests
+
+
+for i in {1..20}; do
+   kubectl exec --namespace=kube-public curl -- sh -c 'test=`wget -qO- -T 2  http://webapp-service.default.svc.cluster.local:8080/ready 2>&1` && echo "$test OK" || echo "Failed"';
+   echo ""
+done
+
+
+================================================================
+
+
+Update the newly created pod 'simple-webapp-2' with a readinessProbe using the given spec
+
+Pod Name: simple-webapp-2
+Image Name: kodekloud/webapp-delayed-start
+Readiness Probe: httpGet
+Http Probe: /ready
+Http Port: 8080
+
+// to replace the existing pod you need to use the below command
+> kubectl replace -f simple-webapp-2.yaml --force
+
+// container in the pod is restarted
+
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /ready
+        port: 8080
+        scheme: HTTP
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+
+================================================================
+
+Update both the pods with a livenessProbe using the given spec
+Delete and recreate the PODs.
+
+Pod Name: simple-webapp-1
+Image Name: kodekloud/webapp-delayed-start
+Liveness Probe: httpGet
+Http Probe: /live
+Http Port: 8080
+Period Seconds: 1
+
+
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /ready
+        port: 8080
+        scheme: HTTP
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+
+    livenessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /live
+        port: 8080
+        scheme: HTTP
+      periodSeconds: 1
+
+
+// both readiness probe and liveness probe
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: simple-webapp
+  name: simple-webapp-2
+  namespace: default
+spec:
+  containers:
+  - env:
+    - name: APP_START_DELAY
+      value: "80"
+    image: kodekloud/webapp-delayed-start
+    imagePullPolicy: Always 
+    name: simple-webapp
+    ports:
+    - containerPort: 8080 
+      protocol: TCP
+    readinessProbe: 
+      failureThreshold: 3
+      httpGet: 
+        path: /ready
+        port: 8080
+        scheme: HTTP
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    livenessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /live
+        port: 8080
+        scheme: HTTP
+      periodSeconds: 1
+                        

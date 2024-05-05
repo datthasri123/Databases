@@ -1,0 +1,4 @@
+Read more about initContainers here. And try out the upcoming practice test.
+https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+
+
