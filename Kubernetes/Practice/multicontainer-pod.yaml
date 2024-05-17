@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: siva-multicontainer-pod     # pod will be created with this name
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx-image
+      image: nginx
+    - name: bsy-box
+      image: busybox

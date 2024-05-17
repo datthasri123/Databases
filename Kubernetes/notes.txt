@@ -1,3 +1,176 @@
+
+// create a pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: siva-nginx-pod     # pod will be created with this name
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx-image
+      image: nginx
+
+
+siva@SIVA-PC:~/Downloads/docker/Kubernetes/Practice$ kubectl get nodes 
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   21d   v1.26.3
+
+
+// create a multicontainer pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: siva-nginx-pod     # pod will be created with this name
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx-image
+      image: nginx
+    - name: bsy-box
+      image: busybox
+
+
+// create pod definition like this
+
+kubectl run redis-container --image=redis --dry-run=client -o yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: redis-container
+  name: redis-container
+spec:
+  containers:
+  - image: redis
+    name: redis-container
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+
+
+// replication controller
+// note you cannot use the selector here
+
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx-rc
+  labels:
+    type: frontendApp-rc
+spec:
+  template:
+    metadata:
+      name: siva-nginx-pod
+      labels:
+        app: my-app
+        type: frontend
+    spec:
+      containers:
+        - name: nginx-image
+          image: nginx
+  replicas: 3
+
+// to delete the replication controllers
+
+kubectl delete replicationcontrollers nginx-rc 
+
+
+// replicaSet
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-rs
+  labels:
+    type: frontendApp-rs
+spec:
+  template:
+    metadata:
+      name: siva-nginx-pod
+      labels:
+        app: my-app
+        type: frontend
+    spec:
+      containers:
+        - name: nginx-image
+          image: nginx
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+
+// to scale up the replicasets
+
+kubectl scale --replicas=5 replicaset nginx-rs
+
+// note that below file must present in location where you are running 
+kubectl scale --replicas=6 -f replicaSet.yaml
+
+
+// to edit the replicaset definition directly
+kubectl edit replicasets.apps nginx-rs
+
+
+//scaling commands
+> kubectl replace -f replicaset-definition.yml
+> kubectl scale -–replicas=6 –f replicaset-definition.yml
+> kubectl scale -–replicas=6 replicaset myapp-replicaset
+
+// replicaset creation and deletion commands
+> kubectl create –f replicaset-definition.yml
+> kubectl get replicaset
+> kubectl delete replicaset myapp-replicaset
+> kubectl replace -f replicaset-definition.yml
+> kubectl scale --replicas=6 -f replicaset-definition.yml
+
+
+//creating deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: my-app
+    kind: frontend
+spec:
+  template:
+    metadata:
+      name: siva-nginx-pod
+      labels:
+        app: my-app
+        type: frontend
+    spec:
+      containers:
+        - name: nginx-image
+          image: nginx
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+    
+
+>kubectl rollout status deployment nginx-deployment 
+deployment "nginx-deployment" successfully rolled out
+
+>kubectl rollout history deployment nginx-deployment 
+deployment.apps/nginx-deployment 
+REVISION  CHANGE-CAUSE
+1         <none>
+
+
+  
+
+
+
+
+
 apiVersion: v1
 kind: Secret
 metadata: 

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: my-app
+    kind: frontend
+spec:
+  template:
+    metadata:
+      name: siva-nginx-pod
+      labels:
+        app: my-app
+        type: frontend
+    spec:
+      containers:
+        - name: nginx-image
+          image: nginx
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+    
+    

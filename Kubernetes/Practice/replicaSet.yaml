@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-rs
+  labels:
+    type: frontendApp-rs
+spec:
+  template:
+    metadata:
+      name: siva-nginx-pod
+      labels:
+        app: my-app
+        type: frontend
+    spec:
+      containers:
+        - name: nginx-image
+          image: nginx
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
