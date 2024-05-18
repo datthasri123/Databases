@@ -1,0 +1,4 @@
+> docker image build -t  python-alpine-img .   // to build image
+> docker images  // shows all the existing images
+> docker rmi python-alpine-img // to remove any image
+> docker container ps // to list the containers

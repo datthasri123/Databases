@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: python-pod-rs
+  namespace: default
+spec:
+  template:
+    metadata:
+      name: python-pod
+      labels:
+        app: basic-app
+      namespace: default
+    spec:
+      restartPolicy: Always
+      containers:
+        - image: alpine-python:latest
+          name: alpine-python
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "1.0"
+            limits:
+              memory: "512Mi"
+              cpu: "1.0"
+      
+  replicas: 2
+  selector:
+    matchLabels:
+      app: basic-app
